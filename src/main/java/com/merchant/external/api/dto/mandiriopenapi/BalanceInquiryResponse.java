@@ -1,11 +1,11 @@
 package com.merchant.external.api.dto.mandiriopenapi;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
-public class BalanceInquiryResponse {
-    private Integer responseCode;
-    private String responseMessage;
+@EqualsAndHashCode(callSuper = false)
+public class BalanceInquiryResponse extends MandiriResponse {
     private String accountNo;
     private String name;
     private String status;

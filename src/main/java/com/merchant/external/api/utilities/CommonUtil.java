@@ -25,6 +25,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Formatter;
+import java.util.HexFormat;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -58,39 +59,44 @@ public class CommonUtil {
     
     public static String generateMandiriSignatureHeader(
         String httpMethod,
-        String url,
-        Object hexSha256RequestBody,
+        String urlPath,
+        String hexSha256RequestBody,
         String timestamp,
         String accessToken,
-        String clientKey
+        String clientSecret
     ) throws NoSuchAlgorithmException, InvalidKeyException {
-        String urlPath = url.split("timestamp")[0];
         String dataToHash = stringAppend(
             httpMethod, ":",
             urlPath, ":",
             accessToken, ":",
+            hexSha256RequestBody, ":",
             timestamp
         );
 
-        SecretKeySpec secretKeySpec = new SecretKeySpec(clientKey.getBytes(), "HmacSHA512");
+        SecretKeySpec secretKeySpec = new SecretKeySpec(clientSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA512");
         Mac mac = Mac.getInstance("HmacSHA512");
         mac.init(secretKeySpec);
-        byte[] sha512 = mac.doFinal(dataToHash.getBytes());
-        return Base64.getEncoder().encodeToString(sha512);
+        byte[] sha512 = mac.doFinal(dataToHash.getBytes(StandardCharsets.UTF_8));
+        // String hexFormat = HexFormat.of().formatHex(sha512);
+        String result = Base64.getEncoder().encodeToString(sha512);
+        return result;
     }
 
     public static String hexSha256(Object requestBody) throws JsonProcessingException, NoSuchAlgorithmException {
         ObjectMapper objectMapper = new ObjectMapper();
         String minifyBody = objectMapper.writeValueAsString(requestBody);
+        log.info(minifyBody);
         MessageDigest digest = MessageDigest.getInstance("SHA256");
-        byte[] sha456 = digest.digest(minifyBody.getBytes());
+        byte[] sha256 = digest.digest(minifyBody.getBytes());
+        String result = HexFormat.of().formatHex(sha256);
 
-        Formatter formatter = new Formatter();
-        for(byte b : sha456) {
-            formatter.format("%02X", b);
-        }
-        formatter.close();
-        return formatter.toString();
+        // Formatter formatter = new Formatter();
+        // for(byte b : sha456) {
+        //     formatter.format("%02X", b);
+        // }
+        // String result = formatter.toString();
+        // formatter.close();
+        return result.toLowerCase();
     }
 
     public static String sha256withRsa(String clientId, String timestamp, int keySize) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
@@ -126,6 +132,14 @@ public class CommonUtil {
         byte[] signedHash = signature.sign();
         return Base64.getEncoder().encodeToString(signedHash);
     }
+
+    // public static String bytesToHex(byte[] bytes) {
+    //     char[] hexChars = new char[bytes.length * 2];
+    //     for(int j = 0; j < bytes.length; j++) {
+    //         int v = bytes[j] & 0XFF;
+    //         hexChars[j * 2] = HEX
+    //     }
+    // }
 
     public static String stringAppend(String... str) {
 		long st = System.currentTimeMillis();
@@ -167,5 +181,18 @@ public class CommonUtil {
             ex.printStackTrace();
          }
          return signature;
+      }
+
+      public static char randomDecimalDigit() {
+        char digits[] = {'0','1','2','3','4','5','6','7','8','9'};
+        return digits[(int)Math.floor(Math.random() * 10)];
+      }
+
+      public static String randomDecimalString(int numberOfDigits) {
+        StringBuilder result = new StringBuilder();
+        for(int i = 0; i < numberOfDigits; i++) {
+            result.append(randomDecimalDigit());
+        }
+        return result.toString();
       }
 }

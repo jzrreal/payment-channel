@@ -7,6 +7,7 @@ import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Random;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -50,38 +51,38 @@ public class MandiriOpenApiServiceImpl implements MandiriOpenApiService {
     private String balanceInquiryUrl;
 
     @Override
-    public MerchantResponse<BalanceInquiryResponse> inquiryBalance(BalanceInquiryMerchantRequest inMsg)
+    public synchronized MerchantResponse<BalanceInquiryResponse> inquiryBalance(BalanceInquiryMerchantRequest inMsg)
     throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, JsonProcessingException,
     UnsupportedEncodingException, SignatureException {
         MerchantResponse<BalanceInquiryResponse> outMsg = new MerchantResponse<>();
         BalanceInquiryRequest request = new BalanceInquiryRequest();
         request.setAccountNo(inMsg.getAccountNo());
-
+        HttpMethod httpMethod = HttpMethod.POST;
         // Thread safety must declare new
         HttpHeaders headers = new HttpHeaders();
         headers = generateDefaultHeaders(
-            generateExternalId(""),
+            generateExternalId(inMsg.getTransactionId()),
             "0001",
-            "POST",
-            balanceInquiryUrl.split(baseUrl)[0],
+            httpMethod.name(),
+            balanceInquiryUrl.split(baseUrl)[1],
             CommonUtil.hexSha256(request),
             requestAccessToken().getTransactionDetail().getAccessToken()
         );
 
         HttpService<BalanceInquiryRequest> httpService = new HttpService<>();
         BalanceInquiryResponse response = httpService
-            .sendRequest(request, headers, balanceInquiryUrl, HttpMethod.POST, BalanceInquiryResponse.class);
+            .sendRequest(request, headers, balanceInquiryUrl, httpMethod, BalanceInquiryResponse.class);
         return outMsg.successTemplate(response);
     }
 
     @Override
-    public MerchantResponse<Object> transfer() {
+    public synchronized MerchantResponse<Object> transfer() {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'transfer'");
     }
 
     @Override
-    public MerchantResponse<AccessTokenResponse> requestAccessToken()
+    public synchronized MerchantResponse<AccessTokenResponse> requestAccessToken()
     throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, UnsupportedEncodingException,
     SignatureException, JsonProcessingException {
         log.info(">> Requesting access token");
@@ -90,7 +91,6 @@ public class MandiriOpenApiServiceImpl implements MandiriOpenApiService {
         String timestamp = dateFormat.format(new Date());
         // timestamp = CommonUtil.generateTimestamp(timestamp, dateFormat.toPattern());
         String dataToEncrypt = CommonUtil.stringAppend(clientId,"|",timestamp);
-        log.info("{}", timestamp);
         // String signature = CommonUtil.sha256withRsa(clientId, timestamp, privateKey);
         String signature = CommonUtil.sign(null, "a123", "mitraa", "a123", "SHA256withRSA", dataToEncrypt);
         AccessTokenRequest request = new AccessTokenRequest("client_credentials");
@@ -101,10 +101,7 @@ public class MandiriOpenApiServiceImpl implements MandiriOpenApiService {
         headers.set("X-SIGNATURE", signature);
         headers.setContentType(MediaType.APPLICATION_JSON);
         // headers.set("Content-Type", "application/x-www-form-urlencoded");
-        log.info(">> X-CLIENT-KEY: {}", clientId);
-        log.info(">> X-TIMESTAMP: {}", timestamp);
-        log.info(">> X-SIGNATURE: {}", signature);
-        
+
         HttpService<AccessTokenRequest> httpService = new HttpService<>();
         AccessTokenResponse response = httpService.sendRequest(request, headers, accessTokenUrl, HttpMethod.POST, AccessTokenResponse.class);
         return outMsg.successTemplate(response);
@@ -117,13 +114,14 @@ public class MandiriOpenApiServiceImpl implements MandiriOpenApiService {
         HttpHeaders headers = new HttpHeaders();
         SimpleDateFormat dateFormat = new SimpleDateFormat(DateFormat.MANDIRI_FORMAT.value());
         String timestamp = dateFormat.format(new Date());
+        headers.setBearerAuth(accessToken);
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Accept", MediaType.APPLICATION_JSON_VALUE);
         headers.set("X-TIMESTAMP", dateFormat.format(new Date()));
         headers.set(
-            "SIGNATURE",
+            "X-SIGNATURE",
             CommonUtil.generateMandiriSignatureHeader(
-                httpMethod, url, hexSha256RequestBodyString, timestamp, accessToken, clientId)
+                httpMethod, url, hexSha256RequestBodyString, timestamp, accessToken, clientSecret)
             );
         headers.set("X-PARTNER-ID", partnerId);
         headers.set("X-EXTERNAL-ID", externalId);
@@ -132,7 +130,7 @@ public class MandiriOpenApiServiceImpl implements MandiriOpenApiService {
     }
 
     protected String generateExternalId(String transactionId) {
-        UUID uuid = new UUID(System.currentTimeMillis(), transactionId.length() * 123456789);
-        return uuid.toString().substring(0, 18);
+        // return CommonUtil.randomDecimalString(6);
+        return "200001";
     }    
 }
