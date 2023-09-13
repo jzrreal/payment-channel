@@ -32,5 +32,5 @@ build/
 ### VS Code ###
 .vscode/
 
-.API_Portal.jks
-.API_Portal.pem
+/API_Portal.jks
+/API_Portal.pem
