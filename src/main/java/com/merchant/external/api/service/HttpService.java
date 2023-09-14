@@ -3,7 +3,6 @@ package com.merchant.external.api.service;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -39,7 +38,7 @@ public class HttpService <REQ>  {
     }
     
     protected ClientHttpRequestFactory getClientHttpRequestFactory() {
-        Integer timeout = 10000;
+        Integer timeout = 50000;
         RequestConfig config = RequestConfig.custom()
             .setConnectTimeout(timeout)
             .setConnectionRequestTimeout(timeout)

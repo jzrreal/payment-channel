@@ -13,6 +13,8 @@ import com.merchant.external.api.dto.MerchantResponse;
 import com.merchant.external.api.dto.mandiriopenapi.AccessTokenResponse;
 import com.merchant.external.api.dto.mandiriopenapi.BalanceInquiryMerchantRequest;
 import com.merchant.external.api.dto.mandiriopenapi.BalanceInquiryResponse;
+import com.merchant.external.api.dto.mandiriopenapi.InterBankTransferRequest;
+import com.merchant.external.api.dto.mandiriopenapi.InterBankTransferResponse;
 
 @Service
 public interface MandiriOpenApiService {
@@ -21,7 +23,9 @@ public interface MandiriOpenApiService {
         throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, JsonProcessingException,
         UnsupportedEncodingException, SignatureException;
 
-    public MerchantResponse<Object> transfer();
+    public MerchantResponse<InterBankTransferResponse> interbankTransfer(InterBankTransferRequest inMsg)
+        throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, JsonProcessingException,
+        UnsupportedEncodingException, SignatureException;
 
     public MerchantResponse<AccessTokenResponse> requestAccessToken()
         throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, UnsupportedEncodingException,
